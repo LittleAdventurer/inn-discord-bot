@@ -6,6 +6,10 @@ This file provides guidance for AI assistants working with the Tavern Discord Bo
 
 **Tavern Discord Bot** (꼬마용사 여관 디스코드 봇) is a feature-rich Discord bot for community management and entertainment. It includes an economy system, gambling games, activity tracking, and content storage features.
 
+## TODO
+
+- [ ] Implement LoL API and update `/전적` command
+
 ## Technology Stack
 
 | Component | Technology |
