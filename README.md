@@ -210,6 +210,77 @@ npm run deploy # 슬래시 커맨드 등록
    - Scopes: `bot`, `applications.commands`
    - Permissions: 필요한 권한 선택
 
+## 기여 방법
+
+프로젝트에 기여해 주셔서 감사합니다! 다음 가이드라인을 참고해 주세요.
+
+### 이슈 등록
+
+버그 발견 또는 기능 제안 시:
+1. [Issues](https://github.com/LittleAdventurer/tavern-discord-bot/issues) 페이지에서 기존 이슈 검색
+2. 중복이 없으면 새 이슈 생성
+3. 명확한 제목과 상세한 설명 작성
+
+### Pull Request
+
+1. **Fork** 저장소를 본인 계정으로 포크
+2. **Branch** 새 브랜치 생성
+   ```bash
+   git checkout -b feature/기능이름
+   ```
+3. **Commit** 변경사항 커밋
+   ```bash
+   git commit -m "feat: 새로운 기능 추가"
+   ```
+4. **Push** 본인 저장소에 푸시
+   ```bash
+   git push origin feature/기능이름
+   ```
+5. **Pull Request** 생성
+
+### 커밋 메시지 컨벤션
+
+| 타입 | 설명 |
+|------|------|
+| `feat` | 새로운 기능 추가 |
+| `fix` | 버그 수정 |
+| `docs` | 문서 수정 |
+| `style` | 코드 포맷팅 (기능 변경 없음) |
+| `refactor` | 코드 리팩토링 |
+| `test` | 테스트 추가 |
+| `chore` | 빌드, 설정 파일 수정 |
+
+### 코드 스타일
+
+- **언어**: 명령어 이름은 한글, 함수/변수명은 camelCase 영문
+- **임베드 색상**: CLAUDE.md의 색상 팔레트 참조
+- **에러 처리**: ephemeral 메시지로 에러 응답
+- **입력 검증**: 데이터베이스 작업 전 모든 입력값 검증
+
+### 개발 환경 설정
+
+```bash
+# 저장소 포크 후 클론
+git clone https://github.com/your-username/tavern-discord-bot.git
+cd tavern-discord-bot
+
+# 의존성 설치
+npm install
+
+# 환경변수 설정
+cp .env.example .env
+
+# 개발 모드 실행
+npm run dev
+```
+
+### 새 명령어 추가하기
+
+1. `src/commands/` 디렉토리에 새 파일 생성
+2. `data`와 `execute` 함수 export
+3. `npm run deploy`로 명령어 등록
+4. 테스트 후 PR 생성
+
 ## 라이선스
 
 ISC
