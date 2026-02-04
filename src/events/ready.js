@@ -17,8 +17,8 @@ const statusMessages = [
   { type: ActivityType.Listening, message: '모험 이야기 경청 중' },
 ];
 
-// 상태 메시지 변경 간격 (30초)
-const STATUS_INTERVAL = 30 * 1000;
+// 상태 메시지 변경 간격 (10분)
+const STATUS_INTERVAL = 10 * 60 * 1000;
 
 let currentStatusIndex = 0;
 

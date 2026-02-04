@@ -61,7 +61,7 @@ Each event exports:
 
 ## Bot Status (Rotating Status Messages)
 
-The bot displays rotating status messages with a "tavern receptionist" (여관 접수원) concept, changing every 30 seconds to make the bot appear more alive.
+The bot displays rotating status messages with a "tavern receptionist" (여관 접수원) concept, changing every 10 minutes to make the bot appear more alive.
 
 ### Status Message Configuration
 
@@ -76,7 +76,7 @@ Located in `src/events/ready.js`:
 ### Configuration Constants
 
 ```javascript
-const STATUS_INTERVAL = 30 * 1000;  // Rotation interval (30 seconds)
+const STATUS_INTERVAL = 10 * 60 * 1000;  // Rotation interval (10 minutes)
 ```
 
 ### Adding New Status Messages
