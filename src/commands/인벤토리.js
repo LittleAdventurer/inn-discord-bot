@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getUserInventory, getUser } from '../database/db.js';
+import { getUserInventory, getUser, getUserBuffs } from '../database/db.js';
 
 const categoryNames = {
   title: '🏷️ 칭호',
@@ -56,6 +56,13 @@ export async function execute(interaction) {
 
       embed.addFields({ name: categoryNames[cat], value: itemList, inline: true });
     }
+  }
+
+  // 활성화된 버프 표시
+  const activeBuffs = getUserBuffs(targetUser.id);
+  if (activeBuffs.length > 0) {
+    const buffList = activeBuffs.map(b => `${b.emoji} ${b.name}`).join('\n');
+    embed.addFields({ name: '✨ 활성 효과', value: buffList, inline: false });
   }
 
   // 칭호 목록 표시 (보유한 칭호가 있으면)

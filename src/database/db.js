@@ -51,6 +51,17 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_inventory_user ON user_inventory(user_id);
   CREATE INDEX IF NOT EXISTS idx_inventory_item ON user_inventory(item_id);
+
+  CREATE TABLE IF NOT EXISTS user_buffs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    buff_type TEXT NOT NULL,
+    item_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, buff_type)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_buffs_user ON user_buffs(user_id);
 `);
 
 // 상점 아이템 초기화 (없으면 추가)
@@ -99,7 +110,7 @@ export function setBalance(userId, amount) {
 }
 
 // 출석 체크
-export function checkDaily(userId) {
+export function checkDaily(userId, rewardAmount = 5000) {
   const user = getUser(userId);
   const today = new Date().toISOString().split('T')[0];
 
@@ -107,8 +118,8 @@ export function checkDaily(userId) {
     return { success: false, message: '오늘 이미 출석체크를 했습니다!' };
   }
 
-  db.prepare('UPDATE users SET daily_check = ?, balance = balance + 5000 WHERE user_id = ?').run(today, userId);
-  return { success: true, newBalance: getUser(userId).balance };
+  db.prepare('UPDATE users SET daily_check = ?, balance = balance + ? WHERE user_id = ?').run(today, rewardAmount, userId);
+  return { success: true, newBalance: getUser(userId).balance, rewardAmount };
 }
 
 // 채팅 카운트 증가
@@ -299,6 +310,46 @@ export function useItem(userId, itemId) {
     item: item,
     remainingQuantity: Math.max(0, remaining)
   };
+}
+
+// ==================== 버프 시스템 ====================
+
+// 버프 타입 상수
+export const BUFF_TYPES = {
+  LUCKY_BEER: 'lucky_beer',      // 행운의 맥주 - 도박 승률 +10%
+  DOUBLE_DAILY: 'double_daily'   // 특제 스튜 - 출석 보상 2배
+};
+
+// 버프 활성화 (아이템 사용 시 호출)
+export function activateBuff(userId, buffType, itemId) {
+  // 이미 같은 버프가 있으면 덮어쓰기
+  db.prepare('INSERT OR REPLACE INTO user_buffs (user_id, buff_type, item_id) VALUES (?, ?, ?)').run(userId, buffType, itemId);
+  return true;
+}
+
+// 버프 보유 여부 확인
+export function hasBuff(userId, buffType) {
+  const buff = db.prepare('SELECT * FROM user_buffs WHERE user_id = ? AND buff_type = ?').get(userId, buffType);
+  return !!buff;
+}
+
+// 버프 소모 (사용 후 삭제)
+export function consumeBuff(userId, buffType) {
+  const buff = db.prepare('SELECT * FROM user_buffs WHERE user_id = ? AND buff_type = ?').get(userId, buffType);
+  if (!buff) return null;
+
+  db.prepare('DELETE FROM user_buffs WHERE user_id = ? AND buff_type = ?').run(userId, buffType);
+  return buff;
+}
+
+// 유저의 모든 활성 버프 조회
+export function getUserBuffs(userId) {
+  return db.prepare(`
+    SELECT ub.*, si.name, si.emoji
+    FROM user_buffs ub
+    JOIN shop_items si ON ub.item_id = si.id
+    WHERE ub.user_id = ?
+  `).all(userId);
 }
 
 export default db;
