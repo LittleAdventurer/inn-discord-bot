@@ -112,11 +112,20 @@ const newStewExists = db.prepare("SELECT COUNT(*) as count FROM shop_items WHERE
 if (newStewExists === 0) {
   const insertItem = db.prepare('INSERT INTO shop_items (name, description, price, emoji, category, consumable) VALUES (?, ?, ?, ?, ?, ?)');
 
-  insertItem.run('여관 특제 스튜', '7일간 출석 보상이 1.5배가 됩니다.', 15000, '🍲', 'consumable', 1);
-  insertItem.run('여관 고급 스튜', '7일간 출석 보상이 2배가 됩니다.', 30000, '🥘', 'consumable', 1);
-  insertItem.run('여관 전설의 스튜', '7일간 출석 보상이 3배가 됩니다.', 60000, '🫕', 'consumable', 1);
+  insertItem.run('여관 특제 스튜', '7일간 출석 보상이 1.25배가 됩니다.', 5000, '🍲', 'consumable', 1);
+  insertItem.run('여관 고급 스튜', '7일간 출석 보상이 1.5배가 됩니다.', 12000, '🥘', 'consumable', 1);
+  insertItem.run('여관 전설의 스튜', '7일간 출석 보상이 2배가 됩니다.', 25000, '🫕', 'consumable', 1);
 
   console.log('[Database] 새로운 스튜 아이템 추가 완료');
+}
+
+// 스튜 아이템 배율/가격 업데이트 (기존 데이터 마이그레이션)
+const stew9 = db.prepare('SELECT * FROM shop_items WHERE id = 9').get();
+if (stew9 && stew9.price !== 5000) {
+  db.prepare("UPDATE shop_items SET description = '7일간 출석 보상이 1.25배가 됩니다.', price = 5000 WHERE id = 9").run();
+  db.prepare("UPDATE shop_items SET description = '7일간 출석 보상이 1.5배가 됩니다.', price = 12000 WHERE id = 10").run();
+  db.prepare("UPDATE shop_items SET description = '7일간 출석 보상이 2배가 됩니다.', price = 25000 WHERE id = 11").run();
+  console.log('[Database] 스튜 아이템 배율/가격 업데이트 완료');
 }
 
 // 유저 조회 또는 생성
@@ -355,9 +364,9 @@ export const BUFF_TYPES = {
 
 // 스튜 아이템 ID와 배수 매핑
 export const STEW_MULTIPLIERS = {
-  9: 1.5,   // 여관 특제 스튜
-  10: 2.0,  // 여관 고급 스튜
-  11: 3.0   // 여관 전설의 스튜
+  9: 1.25,  // 여관 특제 스튜
+  10: 1.5,  // 여관 고급 스튜
+  11: 2.0   // 여관 전설의 스튜
 };
 
 // 버프 활성화 (일회성 버프용)
