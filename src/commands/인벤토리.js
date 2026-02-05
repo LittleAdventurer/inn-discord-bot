@@ -61,7 +61,16 @@ export async function execute(interaction) {
   // 활성화된 버프 표시
   const activeBuffs = getUserBuffs(targetUser.id);
   if (activeBuffs.length > 0) {
-    const buffList = activeBuffs.map(b => `${b.emoji} ${b.name}`).join('\n');
+    const buffList = activeBuffs.map(b => {
+      let buffText = `${b.emoji} **${b.name}**`;
+      if (b.multiplier && b.multiplier > 1) {
+        buffText += ` (${b.multiplier}배)`;
+      }
+      if (b.remainingDays) {
+        buffText += ` - ${b.remainingDays}일 남음`;
+      }
+      return buffText;
+    }).join('\n');
     embed.addFields({ name: '✨ 활성 효과', value: buffList, inline: false });
   }
 

@@ -1,15 +1,17 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getUserInventory, useItem, activateBuff, hasBuff, BUFF_TYPES, getShopItemById } from '../database/db.js';
+import { useItem, activateBuff, activateDurationBuff, hasBuff, getBuff, BUFF_TYPES, STEW_MULTIPLIERS, getShopItemById } from '../database/db.js';
 
-// 아이템 ID와 버프 타입 매핑
-const ITEM_BUFF_MAP = {
-  5: BUFF_TYPES.LUCKY_BEER,    // 행운의 맥주
-  6: BUFF_TYPES.DOUBLE_DAILY   // 여관 특제 스튜
+// 일회성 버프 아이템
+const ONE_TIME_BUFFS = {
+  5: BUFF_TYPES.LUCKY_BEER    // 행운의 맥주
 };
 
+// 기간제 스튜 아이템 (ID 9, 10, 11)
+const DURATION_BUFF_ITEMS = new Set([9, 10, 11]);
+const BUFF_DURATION_DAYS = 7;
+
 const BUFF_DESCRIPTIONS = {
-  [BUFF_TYPES.LUCKY_BEER]: '다음 도박에서 승률 +10%',
-  [BUFF_TYPES.DOUBLE_DAILY]: '다음 출석 보상 2배'
+  [BUFF_TYPES.LUCKY_BEER]: '다음 도박에서 승률 +10%'
 };
 
 export const data = new SlashCommandBuilder()
@@ -50,8 +52,54 @@ export async function execute(interaction) {
     });
   }
 
-  // 버프 타입 확인
-  const buffType = ITEM_BUFF_MAP[itemId];
+  // 기간제 스튜 아이템 처리
+  if (DURATION_BUFF_ITEMS.has(itemId)) {
+    const multiplier = STEW_MULTIPLIERS[itemId];
+    const existingBuff = getBuff(userId, BUFF_TYPES.DAILY_BOOST);
+
+    // 기존 버프보다 낮은 배수면 거부
+    if (existingBuff && existingBuff.multiplier > multiplier) {
+      return await interaction.reply({
+        embeds: [new EmbedBuilder()
+          .setColor(0xE74C3C)
+          .setTitle('❌ 사용 실패')
+          .setDescription(`이미 더 높은 배수의 스튜 효과가 활성화되어 있습니다.\n현재: ${existingBuff.multiplier}배 (${existingBuff.remainingDays}일 남음)`)],
+        ephemeral: true
+      });
+    }
+
+    // 아이템 사용 (인벤토리에서 차감)
+    const useResult = useItem(userId, itemId);
+    if (!useResult.success) {
+      return await interaction.reply({
+        embeds: [new EmbedBuilder()
+          .setColor(0xE74C3C)
+          .setTitle('❌ 사용 실패')
+          .setDescription(useResult.message)],
+        ephemeral: true
+      });
+    }
+
+    // 기간제 버프 활성화
+    const buffResult = activateDurationBuff(userId, BUFF_TYPES.DAILY_BOOST, itemId, multiplier, BUFF_DURATION_DAYS);
+
+    const embed = new EmbedBuilder()
+      .setColor(0x2ECC71)
+      .setTitle(`${item.emoji} ${item.name} 사용!`)
+      .setDescription(`**${interaction.user.displayName}**님이 **${item.name}**을(를) 사용했습니다!`)
+      .addFields(
+        { name: '효과', value: `출석 보상 ${multiplier}배`, inline: true },
+        { name: '지속 기간', value: `${BUFF_DURATION_DAYS}일`, inline: true },
+        { name: '남은 수량', value: `${useResult.remainingQuantity}개`, inline: true }
+      )
+      .setFooter({ text: '효과는 /출석 시 자동으로 적용됩니다.' })
+      .setTimestamp();
+
+    return await interaction.reply({ embeds: [embed] });
+  }
+
+  // 일회성 버프 아이템 처리
+  const buffType = ONE_TIME_BUFFS[itemId];
   if (!buffType) {
     return await interaction.reply({
       embeds: [new EmbedBuilder()
@@ -75,7 +123,6 @@ export async function execute(interaction) {
 
   // 아이템 사용 (인벤토리에서 차감)
   const useResult = useItem(userId, itemId);
-
   if (!useResult.success) {
     return await interaction.reply({
       embeds: [new EmbedBuilder()
@@ -86,7 +133,7 @@ export async function execute(interaction) {
     });
   }
 
-  // 버프 활성화
+  // 일회성 버프 활성화
   activateBuff(userId, buffType, itemId);
 
   const embed = new EmbedBuilder()

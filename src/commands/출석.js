@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { checkDaily, hasBuff, consumeBuff, BUFF_TYPES } from '../database/db.js';
+import { checkDaily, getBuff, BUFF_TYPES } from '../database/db.js';
 
 const BASE_REWARD = 5000;
 
@@ -10,9 +10,10 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction) {
   const userId = interaction.user.id;
 
-  // 특제 스튜 버프 확인
-  const hasDoubleBuff = hasBuff(userId, BUFF_TYPES.DOUBLE_DAILY);
-  const rewardAmount = hasDoubleBuff ? BASE_REWARD * 2 : BASE_REWARD;
+  // 스튜 버프 확인 (기간제)
+  const dailyBuff = getBuff(userId, BUFF_TYPES.DAILY_BOOST);
+  const multiplier = dailyBuff ? dailyBuff.multiplier : 1.0;
+  const rewardAmount = Math.floor(BASE_REWARD * multiplier);
 
   const result = checkDaily(userId, rewardAmount);
 
@@ -26,19 +27,18 @@ export async function execute(interaction) {
     return await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
-  // 버프 소모 (출석 성공 시에만)
-  let buffUsed = false;
-  if (hasDoubleBuff) {
-    consumeBuff(userId, BUFF_TYPES.DOUBLE_DAILY);
-    buffUsed = true;
+  const hasBuff = multiplier > 1.0;
+  let buffDescription = '';
+  if (hasBuff && dailyBuff) {
+    buffDescription = `\n🍲 스튜 효과 적용! (${multiplier}배, ${dailyBuff.remainingDays}일 남음)`;
   }
 
   const embed = new EmbedBuilder()
-    .setColor(buffUsed ? 0xF1C40F : 0x2ECC71)
-    .setTitle(buffUsed ? '✨ 특별 출석 완료!' : '✅ 출석 완료!')
-    .setDescription(`**${interaction.user.displayName}**님, 출석체크 완료!${buffUsed ? '\n🍲 여관 특제 스튜 효과 적용! (보상 2배)' : ''}`)
+    .setColor(hasBuff ? 0xF1C40F : 0x2ECC71)
+    .setTitle(hasBuff ? '✨ 특별 출석 완료!' : '✅ 출석 완료!')
+    .setDescription(`**${interaction.user.displayName}**님, 출석체크 완료!${buffDescription}`)
     .addFields(
-      { name: '지급 포인트', value: `+${rewardAmount.toLocaleString()}원${buffUsed ? ' (2배!)' : ''}`, inline: true },
+      { name: '지급 포인트', value: `+${rewardAmount.toLocaleString()}원${hasBuff ? ` (${multiplier}배!)` : ''}`, inline: true },
       { name: '현재 잔액', value: `${result.newBalance.toLocaleString()}원`, inline: true }
     )
     .setThumbnail(interaction.user.displayAvatarURL())
